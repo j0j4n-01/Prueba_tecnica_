@@ -1,69 +1,45 @@
-// import React, { useState, useEffect } from "react";
-// // Cambia esta línea de importación
-// import axiosClient from "../../service/axiosClient";  // Sin las llaves
-// import Jugadores from "../../components/Jugadores/jugadores";
-// import "./Juegos.css";
-
-// const Juegos = () => {
-//     const [jugadores, setJugadores] = useState([]);
-//     const [gameStatus, setGameStatus] = useState("iniciado");
-
-//     useEffect(() => {
-//         axiosClient.get("/jugadores")
-//             .then(response => setJugadores(response.data))
-//             .catch(error => console.log("Error al cargar jugadores:", error));
-//     }, []);
-
-//     const startGame = () => {
-//         setGameStatus("en progreso");
-//     };
-
-//     const finishGame = () => {
-//         setGameStatus("terminado");
-//     };
-
-//     return (
-//         <div className="juego-container">
-//             <h1>¡Carrera de Caballos!</h1>
-//             <div className="jugadores-container">
-//                 {jugadores.map(jugador => (
-//                     <Jugadores key={jugador.id} name={jugador.nombre} />
-//                 ))}
-//             </div>
-//             <div className="buttons">
-//                 {gameStatus === "iniciado" && (
-//                     <button onClick={startGame}>Iniciar Juego</button>
-//                 )}
-//                 {gameStatus === "en progreso" && (
-//                     <button onClick={finishGame}>Terminar Juego</button>
-//                 )}
-//             </div>
-//         </div>
-//     );
-// };
-
-// export default Juegos;
-
-
-
 import React, { useState, useEffect } from "react";
+import { createJugador } from "../../service/jugadoresService";
 import "./Juegos.css";
 
 const Juegos = () => {
+    const [trackCards, setTrackCards] = useState(Array(10).fill(null));  
     const [playerName, setPlayerName] = useState("");
-    const [gameStage, setGameStage] = useState("login"); // login, playing
+    const [gameStage, setGameStage] = useState("login"); 
     const [victories, setVictories] = useState(0);
     const [deckId, setDeckId] = useState(null);
-    const [trackCards, setTrackCards] = useState(Array(5).fill(null));
     const [horseCards, setHorseCards] = useState([]);
     const [currentCard, setCurrentCard] = useState(null);
     const [winner, setWinner] = useState(null);
     const [loading, setLoading] = useState(false);
+    const [selectedHorse, setSelectedHorse] = useState(null);  
+    const [horsePositions, setHorsePositions] = useState({
+        "HEARTS": 0,
+        "DIAMONDS": 0,
+        "CLUBS": 0,
+        "SPADES": 0,
+    });
+    const horses = [
+        { suit: "HEARTS", label: "Corazón" },
+        { suit: "DIAMONDS", label: "Diamante" },
+        { suit: "CLUBS", label: "Trébol" },
+        { suit: "SPADES", label: "Pica" }
+    ];
 
-    const handleSubmitName = (e) => {
+    const handleSubmitName = async (e) => {
         e.preventDefault();
-        if (playerName.trim()) {
-            setGameStage("playing");
+        if (playerName.trim() && selectedHorse) {
+            try {
+                const jugadorCreado = await createJugador({ nombre: playerName });
+                if (jugadorCreado) {
+                    setGameStage("playing");
+                }
+            } catch (error) {
+                alert("Hubo un error al crear el jugador. Intenta nuevamente.");
+                console.error(error);
+            }
+        } else {
+            alert("Por favor, selecciona un caballo y un nombre.");
         }
     };
 
@@ -106,6 +82,10 @@ const Juegos = () => {
         setLoading(false);
     };
 
+    const selectHorse = (suit) => {
+        setSelectedHorse(suit);
+    };
+
     const drawCard = async () => {
         if (!deckId || winner) return;
 
@@ -131,20 +111,34 @@ const Juegos = () => {
         const horseIndex = horseCards.findIndex(
             (horse) => horse.suit === card.suit
         );
+        
         if (horseIndex !== -1) {
-            const position = trackCards.findIndex(
-                (track) => track.value === card.value
-            );
-            if (position !== -1) {
-                setWinner(horseCards[horseIndex]);
-                setVictories((prev) => prev + 1);
+            const horseSuit = card.suit;
+    
+            // Aumenta la posición del caballo seleccionado
+            setHorsePositions((prevPositions) => ({
+                ...prevPositions,
+                [horseSuit]: prevPositions[horseSuit] + 1,
+            }));
+    
+            // verificar cual carta llego al final
+            if (horseSuit === selectedHorse && horsePositions[horseSuit] >= 10) {
+                setWinner(true); 
+                setVictories((prev) => prev + 1);  
+                alert("¡Felicidades, has ganado!");
+            } else if (horsePositions[horseSuit] >= 10) {
+                if (horseSuit !== selectedHorse) {
+                    setWinner(false); 
+                    alert("Lo siento, has perdido.");
+                }
             }
         }
     };
+    
 
     const renderCard = (card, faceDown = false) => {
         if (!card) {
-            return <div className="empty-card">?</div>;
+            return <div className="empty-card"></div>;
         }
 
         if (faceDown) {
@@ -174,6 +168,20 @@ const Juegos = () => {
                             className="name-input"
                             required
                         />
+                        <div className="horse-selection">
+                            
+                            {horses.map((horse) => (
+                                <button
+                                    key={horse.suit}
+                                    type="button"
+                                    onClick={() => selectHorse(horse.suit)}
+                                    className={`horse-button ${selectedHorse === horse.suit ? "selected" : ""}`}
+                                    disabled={selectedHorse}
+                                >
+                                    {horse.label}
+                                </button>
+                            ))}
+                        </div>
                         <button type="submit" className="game-button">
                             Comenzar
                         </button>
@@ -192,6 +200,20 @@ const Juegos = () => {
                     <span className="victories">Victorias: {victories}</span>
                 </div>
             </div>
+            <div className="horse-cards">
+                {horseCards.map((card, index) => {
+                    const horsePosition = horsePositions[card.suit];  
+                    return (
+                        <div
+                            key={`horse-${index}`}
+                            className="horse-card"
+                            style={{ transform: `translateX(${horsePosition * 20}px)` }}  
+                        >
+                            {renderCard(card)}
+                        </div>
+                    );
+                })}
+            </div>
 
             {!horseCards.length ? (
                 <button
@@ -206,7 +228,9 @@ const Juegos = () => {
                     <div className="main-game-area">
                         <div className="track-cards">
                             {trackCards.map((card, index) => (
-                                <div key={`track-${index}`}>{renderCard(card, true)}</div>
+                                <div key={`track-${index}`} className="track-card">
+                                    {renderCard(card, true)} 
+                                </div>
                             ))}
                         </div>
 
@@ -215,44 +239,42 @@ const Juegos = () => {
                             disabled={loading}
                             className="game-button"
                         >
-                            Robar Carta
+                            Sacar Carta
                         </button>
-
-                        <div className="horse-cards">
-                            {horseCards.map((card, index) => (
-                                <div key={`horse-${index}`}>{renderCard(card)}</div>
-                            ))}
-                        </div>
                     </div>
 
                     {currentCard && (
                         <div className="current-card">
-                            <p>Carta actual:</p>
+                            <p>CARTA:</p>
                             <div className="card-display">{renderCard(currentCard)}</div>
                         </div>
                     )}
                 </div>
             )}
 
-            {winner && (
-                <div className="winner-container">
-                    <h3 className="winner-text">
-                        ¡El AS de {winner.suit} ha ganado!
-                    </h3>
-                    <button
-                        onClick={() => {
-                            setWinner(null);
-                            setCurrentCard(null);
-                            setHorseCards([]);
-                            setTrackCards(Array(5).fill(null));
-                            initializeGame();
-                        }}
-                        className="game-button"
-                    >
-                        Jugar de nuevo
-                    </button>
-                </div>
-            )}
+{winner !== null && (
+    <div className="winner-container">
+        <h3 className="winner-text">
+            {winner ? `¡El AS de ${selectedHorse} ha ganado!` : "Lo siento, has perdido."}
+        </h3>
+        <button
+            onClick={() => {
+                setWinner(null);
+                setHorsePositions({
+                    HEARTS: 0,
+                    DIAMONDS: 0,
+                    CLUBS: 0,
+                    SPADES: 0,
+                });
+                setTrackCards(Array(10).fill(null)); 
+            }}
+            className="game-button"
+        >
+            Volver a jugar
+        </button>
+    </div>
+)}
+
         </div>
     );
 };

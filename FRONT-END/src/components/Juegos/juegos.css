@@ -36,8 +36,8 @@ button:hover {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 20px; /* Espacio entre el botón y la carta */
-    margin: 20px 0;  /* Espacio vertical entre las cartas de la pista y los caballos */
+    gap: 20px; 
+    margin: 20px 0;  
 }
 .game-container {
     min-height: 100vh;
@@ -72,9 +72,8 @@ button:hover {
 }
 
 .name-input {
-    width: calc(100% - 40px); /* Restamos el doble del padding del formulario */
-    margin: 20px 5px; /* Agregamos margen horizontal igual al padding del form */
-    /* El resto de las propiedades se mantienen igual */
+    width: calc(100% - 40px); 
+    margin: 20px 5px; 
     padding: 15px 20px;
     border: 2px solid #e0e0e0;
     border-radius: 12px;
@@ -129,20 +128,33 @@ button:hover {
 }
 
 .card-image {
-    width: 100px;  /* Puedes ajustar este valor según necesites */
-    height: auto;  /* Esto mantiene la proporción de la imagen */
+    width: 100px;  
+    height: auto;  
     object-fit: contain;
 }
 
 .card, .empty-card, .card-back {
-    width: 100px;  /* Mismo ancho que card-image */
-    height: 140px; /* Ajusta la altura manteniendo la proporción de una carta */
-    border-radius: 8px; /* Opcional: para mantener las esquinas redondeadas */
+    width: 100px;  
+    height: 140px; 
+    border-radius: 8px; 
 }
 
-.track-cards, .horse-cards {
-    gap: 10px; /* Espacio entre las cartas */
+.horse-cards{
+gap: 10px;
+}
+
+.track-cards  {
+    display: flex; /* Cambia a display: flex para que se acomoden en línea */
+    gap: 10px;     /* Separación entre las cartas */
+    justify-content: center; /* Asegura que las cartas se centren */
+    margin-top: 20px;
 } 
+.track-card {
+    width: 100px;  /* Asegúrate de que tenga el mismo tamaño que las cartas de los caballos */
+    height: 140px;
+    border-radius: 8px;
+    display: inline-block;
+}
 
 .game-board {
     display: flex;
@@ -161,4 +173,40 @@ button:hover {
     display: flex;
     flex-direction: column;
     align-items: center;
+}
+
+.player-info {
+    display: flex;
+    flex-direction: column; 
+    gap: 10px; 
+}
+.horse-selection {
+    display: flex;
+    justify-content: space-around;
+    gap: 10px;
+    margin: 20px 0;
+}
+
+.horse-selection button {
+    padding: 10px 20px;
+    font-size: 1.1rem;
+    border-radius: 8px;
+    background-color: #4CAF50;
+    color: white;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.horse-selection button:hover {
+    background-color: #45a049;
+}
+
+.horse-selection button.selected {
+    background-color: #ff9900; /* Resalta la carta seleccionada */
+}
+
+.selected-horse {
+    margin-top: 20px;
+    font-size: 1.2rem;
+    color: #333;
 }
